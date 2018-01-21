@@ -41,6 +41,9 @@ def get_comment_threads(kwagrs):
 def parse_item(snippet):
     comment = {}
     comment['comment_id'] = snippet['id']
+    # TODO: this should be unique user id, but as docs states,
+    # everything exept name is optional, so for now let it be name
+    # https://developers.google.com/youtube/v3/docs/comments#resource
     comment['user_name'] = snippet['snippet']['authorDisplayName']
     comment['timestamp'] = int(datetime.strptime(
             snippet['snippet']['publishedAt'],
@@ -56,12 +59,10 @@ def get_replies(parent_id):
     response = youtube.comments().list(
             part='id,snippet',
             parentId=parent_id).execute()
-    comments = []
 
     for item in response['items']:
-        comments.append(parse_item(item))
+        yield parse_item(item)
 
-    return comments
 
 
 def yield_comments(threads):
@@ -70,6 +71,9 @@ def yield_comments(threads):
         comment['source'] = YOUTUBE_URL_PREFIX + thread['snippet']['videoId']
 
         if thread['snippet']['totalReplyCount'] != 0:
+            # additional call to API needed to receive all the comments,
+            # see replies.comments[] part of docs here:
+            # https://developers.google.com/youtube/v3/docs/commentThreads#resource
             for reply in get_replies(comment['comment_id']):
                 reply['reply_to'] = comment['user_name']
                 reply['source'] = YOUTUBE_URL_PREFIX \
@@ -80,29 +84,41 @@ def yield_comments(threads):
         yield comment
 
 
+def write_comments_to_file(comments, filename):
+    ''' 
+    Arguments:
+        comments(dict): comments to be written to file
+        filename(str) : name of the file to write comments into
+    '''
+
+    with open(filename, 'w') as fp:
+        json.dump(comments, fp, indent=2, ensure_ascii=False)
+
+
 if __name__ == "__main__":
     # TODO: get video id from cl argument
-    videoId = '3ePzmHUSs7k'
-    # TODO: get rid of maxResults
+    video_id = 'XKVDXbIpW9Q'
+    write_to_file = True
+    output_filename = video_id + '.json'
+
     threads = get_comment_threads({
-        'videoId': videoId, 
+        'videoId': video_id, 
         'maxResults': _MAX_RESULTS_PER_QUERY,})
 
+    # FIXME: this is dumb: using iterator to convert the thing into the list
     comments = list(yield_comments(threads))
 
-    if 'nextPageToken' in threads:
-        while threads['nextPageToken'] != '':
-            threads = get_comment_threads({
-                'videoId': videoId,  
-                'maxResults': _MAX_RESULTS_PER_QUERY,
-                'pageToken': threads['nextPageToken']})
+    while 'nextPageToken' in threads:
+        threads = get_comment_threads({
+            'videoId': video_id,  
+            'maxResults': _MAX_RESULTS_PER_QUERY,
+            'pageToken': threads['nextPageToken']})
 
-            print(threads['nextPageToken'])
+        for comment in yield_comments(threads):
+            comments.append(comment)
 
-            for comment in yield_comments(threads):
-                comments.append(comment)
+        print(len(comments))
 
-    # TODO: move this to separate function
-    with open(videoId + '.json', 'w') as fp:
-        json.dump(comments, fp, indent=2, ensure_ascii=False)
+    if write_to_file:
+        write_comments_to_file(comments, output_filename)
 
