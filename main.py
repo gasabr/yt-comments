@@ -1,10 +1,18 @@
+import sys
+import json
+import argparse
+
 from apiclient.discovery import build
 from apiclient.errors import HttpError
-from oauth2client.tools import argparser
 from YamJam import yamjam       # for managing secret keys
 from datetime import datetime
-import json
 
+
+parser = argparse.ArgumentParser(
+    description='Download comments from youtube')
+parser.add_argument(
+    '--videoId', type=str, help='url of the video after v=')
+args = parser.parse_args()
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
 # tab of
@@ -95,12 +103,7 @@ def write_comments_to_file(comments, filename):
         json.dump(comments, fp, indent=2, ensure_ascii=False)
 
 
-if __name__ == "__main__":
-    # TODO: get video id from cl argument
-    video_id = 'XKVDXbIpW9Q'
-    write_to_file = True
-    output_filename = video_id + '.json'
-
+def download_comments(video_id):
     threads = get_comment_threads({
         'videoId': video_id, 
         'maxResults': _MAX_RESULTS_PER_QUERY,})
@@ -117,8 +120,18 @@ if __name__ == "__main__":
         for comment in yield_comments(threads):
             comments.append(comment)
 
-        print(len(comments))
+    return comments
 
-    if write_to_file:
-        write_comments_to_file(comments, output_filename)
+
+if __name__ == "__main__":
+    try:
+        video_id = args.videoId
+    except AttributeError as e:
+        sys.stderr.write('Please specify id of the video.\n')
+        sys.exit(1)
+
+    comments = download_comments(video_id)
+
+    json.dump(comments, sys.stdout)
+    print()
 
