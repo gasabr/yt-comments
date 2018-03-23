@@ -9,9 +9,9 @@ from datetime import datetime
 
 
 parser = argparse.ArgumentParser(
-    description='Download comments from youtube')
+        description='Download comments from youtube')
 parser.add_argument(
-    '--videoId', type=str, help='url of the video after v=')
+        '--videoId', type=str, help='url of the video after v=')
 args = parser.parse_args()
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
@@ -25,17 +25,17 @@ YOUTUBE_API_VERSION = "v3"
 YOUTUBE_URL_PREFIX = 'https://www.youtube.com/watch?v='
 
 youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                developerKey=yamjam()['code4navalny']['YOUTUBE_KEY'])
+        developerKey=yamjam()['code4navalny']['YOUTUBE_KEY'])
 
 _MAX_RESULTS_PER_QUERY = 100
 
 
 def get_comment_threads(kwagrs):
     ''' Returns list of comment threads
-    
-    For list of kwargs visit 
+
+    For list of kwargs visit
     https://developers.google.com/youtube/v3/docs/commentThreads/list
-    
+
     '''
 
     comments = youtube.commentThreads().list(
@@ -54,8 +54,8 @@ def parse_item(snippet):
     # https://developers.google.com/youtube/v3/docs/comments#resource
     comment['user_name'] = snippet['snippet']['authorDisplayName']
     comment['timestamp'] = int(datetime.strptime(
-            snippet['snippet']['publishedAt'],
-            '%Y-%m-%dT%H:%M:%S.000Z').timestamp() * 1000)
+        snippet['snippet']['publishedAt'],
+        '%Y-%m-%dT%H:%M:%S.000Z').timestamp() * 1000)
 
     comment['comment'] = snippet['snippet']['textOriginal']
     comment['likes'] = snippet['snippet']['likeCount']
@@ -68,9 +68,7 @@ def get_replies(parent_id):
             part='id,snippet',
             parentId=parent_id).execute()
 
-    for item in response['items']:
-        yield parse_item(item)
-
+    return response['items']
 
 
 def yield_comments(threads):
@@ -93,7 +91,7 @@ def yield_comments(threads):
 
 
 def write_comments_to_file(comments, filename):
-    ''' 
+    '''
     Arguments:
         comments(dict): comments to be written to file
         filename(str) : name of the file to write comments into
@@ -105,7 +103,7 @@ def write_comments_to_file(comments, filename):
 
 def download_comments(video_id):
     threads = get_comment_threads({
-        'videoId': video_id, 
+        'videoId': video_id,
         'maxResults': _MAX_RESULTS_PER_QUERY,})
 
     # FIXME: this is dumb: using iterator to convert the thing into the list
@@ -113,7 +111,7 @@ def download_comments(video_id):
 
     while 'nextPageToken' in threads:
         threads = get_comment_threads({
-            'videoId': video_id,  
+            'videoId': video_id,
             'maxResults': _MAX_RESULTS_PER_QUERY,
             'pageToken': threads['nextPageToken']})
 
@@ -121,6 +119,14 @@ def download_comments(video_id):
             comments.append(comment)
 
     return comments
+
+
+def async_download_comments(video_id):
+    # create a pool (queue) of threads to be downloaded for given video
+    # create list of threads that will be polling (non-blocking) for the
+    # videoId, when they got one -- they are going to download threads into
+    # the list (create comments from it) and append it to the resulting vector
+    pass
 
 
 if __name__ == "__main__":

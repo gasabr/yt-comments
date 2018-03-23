@@ -1,0 +1,37 @@
+Changes:
+- removed trailing whitespaces
+
+
+- look at the yield_comments impl
+- decide if the yield needed here (will this help with async or not)?
+- write "progress bar" either in yield_comments or in ...
+
+• all this was done to learn async
+• now i have working sync variant
+
+progress bar can only be made if there is
+
+I got comments by 100s.
+
+
+### Idea:
+one buffer of comments and all spawned threads working with async calls to
+YT API append comments to that buffer.
+Is it worth it at all to write async thing for downloading staff?
+
+How should async code work:
+1st level of threads to download threads of comments
+and from this level new threads could be called to download the rest of comments
+this is total overengineering for small videos, fuck it, i just want to pust
+async program out where
+
+If the whole list was returned from API there is no point to return elements one
+by one. 
+But that seems reasonable to yield the whole thing, because it can be ascuired
+any moment
+
+How to organize one queue to store all the nextPageTokens?
+In the example, he created workers with the queue
+
+so, threads in pool should ask for new videoId, till the moment they will 
+receive
