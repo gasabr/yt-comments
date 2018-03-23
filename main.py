@@ -8,8 +8,7 @@ from YamJam import yamjam       # for managing secret keys
 from datetime import datetime
 
 
-parser = argparse.ArgumentParser(
-        description='Download comments from youtube')
+parser = argparse.ArgumentParser(description='Download comments from youtube')
 parser.add_argument(
         '--videoId', type=str, help='url of the video after v=')
 args = parser.parse_args()
@@ -18,14 +17,14 @@ args = parser.parse_args()
 # tab of
 #   https://cloud.google.com/console
 # Please ensure that you have enabled the YouTube Data API for your project.
-DEVELOPER_KEY = yamjam()['code4navalny']['YOUTUBE_KEY']
+DEVELOPER_KEY = yamjam()['yt_comments']['YOUTUBE_KEY']
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
 YOUTUBE_URL_PREFIX = 'https://www.youtube.com/watch?v='
 
 youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-        developerKey=yamjam()['code4navalny']['YOUTUBE_KEY'])
+        developerKey=DEVELOPER_KEY)
 
 _MAX_RESULTS_PER_QUERY = 100
 
